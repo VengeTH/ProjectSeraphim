@@ -2,6 +2,7 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.SceneManagement;
 using System;
+using UnityEngine.Tilemaps;
 
 public class CharacterScript : MonoBehaviour
 {
@@ -9,7 +10,7 @@ public class CharacterScript : MonoBehaviour
     private float moveInput;
     public float jumpForce = 5f;
     public float speed = 5f;
-    private bool isGrounded;
+    [SerializeField] private bool isGrounded = true;
     private Animator animator;
 
     public Transform groundCheck;
@@ -42,24 +43,39 @@ public class CharacterScript : MonoBehaviour
         isGrounded = Physics2D.OverlapCircle(groundCheck.position, checkRadius, groundLayer);
         Debug.DrawLine(transform.position, groundCheck.position, Color.green);
 
-        animator.SetFloat("Horizontal", moveInput);
+        //Iniba ko yung animation controller
+        /*animator.SetFloat("Horizontal", moveInput);
         animator.SetFloat("Speed", Mathf.Abs(moveInput));
-        animator.SetBool("isGrounded", isGrounded);
+        animator.SetBool("isGrounded", isGrounded);*/
+
+        animator.SetFloat("xVelocity", Math.Abs(rb.linearVelocity.x));
+        animator.SetFloat("yVelocity", rb.linearVelocity.y);
+
+        if (isGrounded)
+        {
+            animator.SetBool("isJumping", false);
+        }
     }
 
     void Update()
     {
+        //attack
         if (Input.GetKeyDown(KeyCode.Mouse0)){
             animator.SetTrigger("Attack");
         }
-        // if (moveInput != 0)
-        //     spriteRenderer.flipX = (moveInput < 0);
 
+        //Sprite gets flipped when going different direction
+        if (moveInput != 0) {
+            spriteRenderer.flipX = (moveInput > 0);
+        }
+
+        //JUMP ADD COMMENTS NAMAN PRE
         if ((Input.GetKeyDown(KeyCode.UpArrow) ||
             Input.GetKeyDown(KeyCode.W) ||
             Input.GetKeyDown(KeyCode.Space)) && isGrounded)
         {
             rb.linearVelocity = Vector2.up * jumpForce;
+            animator.SetBool("isJumping", true);
         }
 
         // Check if player is winning
@@ -109,5 +125,17 @@ public class CharacterScript : MonoBehaviour
     void OnDestroy()
     {
         if (instance == this) instance = null;
+    }
+
+    void OnCollisionEnter2D(Collision2D collision) {
+        if (collision.collider.TryGetComponent<TilemapCollider2D>(out TilemapCollider2D tilemapCollider)) {
+            isGrounded = true;
+        }
+    }
+
+        void OnCollisionExit2D(Collision2D collision) {
+        if (collision.collider.TryGetComponent<TilemapCollider2D>(out TilemapCollider2D tilemapCollider)) {
+            isGrounded = false;
+        }
     }
 }
